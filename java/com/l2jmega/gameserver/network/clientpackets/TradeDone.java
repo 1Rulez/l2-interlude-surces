@@ -1,0 +1,113 @@
+package com.l2jmega.gameserver.network.clientpackets;
+
+import com.l2jmega.commons.concurrent.ThreadPool;
+import com.l2jmega.commons.random.Rnd;
+import com.l2jmega.gameserver.model.World;
+import com.l2jmega.gameserver.model.actor.instance.Player;
+import com.l2jmega.gameserver.model.tradelist.TradeList;
+import com.l2jmega.gameserver.network.SystemMessageId;
+import com.l2jmega.gameserver.network.serverpackets.EnchantResult;
+
+import phantom.FakePlayer;
+import phantom.FakePlayerConfig;
+
+public final class TradeDone extends L2GameClientPacket
+{
+	private int _response;
+	
+	@Override
+	protected void readImpl()
+	{
+		_response = readD();
+	}
+	
+	@Override
+	protected void runImpl()
+	{
+		final Player player = getClient().getActiveChar();
+		if (player == null)
+			return;
+		
+		final TradeList trade = player.getActiveTradeList();
+		if (trade == null)
+			return;
+		
+		if (trade.isLocked())
+			return;
+		
+		if (_response != 1)
+		{
+			player.cancelActiveTrade();
+			return;
+		}
+		
+		// Trade owner not found, or owner is different of packet sender.
+		final Player owner = trade.getOwner();
+		if (owner == null || !owner.equals(player))
+			return;
+		
+		// Trade partner not found, cancel trade
+		final Player partner = trade.getPartner();
+		if (partner == null || World.getInstance().getPlayer(partner.getObjectId()) == null)
+		{
+			player.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
+			player.cancelActiveTrade();
+			return;
+		}
+		
+		if (!player.getAccessLevel().allowTransaction())
+		{
+			player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
+			player.cancelActiveTrade();
+			return;
+		}
+		
+		if (player.isSubmitingPin())
+		{
+			player.sendMessage("Unable to do any action while PIN is not submitted");
+			return;
+		}
+
+		
+		// Sender under enchant process, close it.
+		if (owner.getActiveEnchantItem() != null)
+		{
+			owner.setActiveEnchantItem(null);
+			owner.sendPacket(EnchantResult.CANCELLED);
+			owner.sendPacket(SystemMessageId.ENCHANT_SCROLL_CANCELLED);
+		}
+		
+		// Partner under enchant process, close it.
+		if (partner.getActiveEnchantItem() != null)
+		{
+			partner.setActiveEnchantItem(null);
+			partner.sendPacket(EnchantResult.CANCELLED);
+			partner.sendPacket(SystemMessageId.ENCHANT_SCROLL_CANCELLED);
+		}
+		
+		trade.confirm();
+		
+		if (partner instanceof FakePlayer)
+		{
+			int delay = Rnd.get(FakePlayerConfig.FAKE_TRADE_CONFIRM_DELAY_MIN, FakePlayerConfig.FAKE_TRADE_CONFIRM_DELAY_MAX);
+			final Player fakePartner = partner;
+			ThreadPool.schedule(() ->
+			{
+				try
+				{
+					TradeList fakeTrade = fakePartner.getActiveTradeList();
+					if (fakeTrade == null)
+						return;
+					if (Rnd.get(100) < FakePlayerConfig.FAKE_TRADE_CONFIRM_CHANCE)
+						fakeTrade.confirm();
+					else
+						fakePartner.cancelActiveTrade();
+				}
+				catch (Exception e)
+				{
+					fakePartner.cancelActiveTrade();
+				}
+			}, delay);
+		}
+	}
+}

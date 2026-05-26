@@ -1,0 +1,50 @@
+package com.l2jmega.gameserver.network.clientpackets;
+
+import com.l2jmega.gameserver.model.World;
+import com.l2jmega.gameserver.model.actor.instance.Player;
+import com.l2jmega.gameserver.network.SystemMessageId;
+import com.l2jmega.gameserver.network.serverpackets.ExAskJoinPartyRoom;
+import com.l2jmega.gameserver.network.serverpackets.SystemMessage;
+
+import phantom.FakePlayer;
+
+public class RequestAskJoinPartyRoom extends L2GameClientPacket
+{
+	private static String _name;
+	
+	@Override
+	protected void readImpl()
+	{
+		_name = readS();
+	}
+	
+	@Override
+	protected void runImpl()
+	{
+		final Player activeChar = getClient().getActiveChar();
+		if (activeChar == null)
+			return;
+		
+		// Send PartyRoom invite request (with activeChar) name to the target
+		final Player target = World.getInstance().getPlayer(_name);
+		if (target != null)
+		{
+			// Fake players cannot join party rooms (no client to respond)
+			if (target instanceof FakePlayer)
+			{
+				activeChar.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
+				return;
+			}
+			
+			if (!target.isProcessingRequest())
+			{
+				activeChar.onTransactionRequest(target);
+				target.sendPacket(new ExAskJoinPartyRoom(activeChar.getName()));
+			}
+			else
+				activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_BUSY_TRY_LATER).addCharName(target));
+		}
+		else
+			activeChar.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
+	}
+}
