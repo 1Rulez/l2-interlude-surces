@@ -1009,6 +1009,10 @@ public abstract class FakePlayerAI {
                if (this.tryBypassObstacleForTarget(target)) {
                   return true;
                }
+               // На олимпиаде не ломимся в стену - пытаемся найти обходной путь или стоим
+               if (this._fakePlayer.isInOlympiadMode()) {
+                  return false;
+               }
                this.moveToPawn(target, 50);
                return true;
             }
