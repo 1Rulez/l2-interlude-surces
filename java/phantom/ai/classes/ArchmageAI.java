@@ -55,6 +55,7 @@ public class ArchmageAI extends AdvancedCombatAI {
    @Override
    protected List<SupportSpell> getSelfSupportSpells() {
       List<SupportSpell> _selfSupportSpells = new ArrayList<>();
+      _selfSupportSpells.add(new SupportSpell(337, 2));
       _selfSupportSpells.add(new SupportSpell(2037, SpellUsageCondition.LESSHPPERCENT, 85, 1));
       _selfSupportSpells.add(new SupportSpell(2166, SpellUsageCondition.MISSINGCP, 500, 1));
       _selfSupportSpells.add(new SupportSpell(2005, SpellUsageCondition.MISSINGMP, 2000, 1));
