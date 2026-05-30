@@ -2815,6 +2815,13 @@ public class FakeHelpers {
       }
 
       switch (player.getClassId()) {
+         case PHOENIX_KNIGHT:
+         case SWORD_MUSE:
+         case HELL_KNIGHT:
+         case EVAS_TEMPLAR:
+         case SHILLIEN_KNIGHT:
+         case SHILLIEN_TEMPLAR:
+            return FakePlayerConfig.LIST_FAKE_OLYMPIAD_SWORD;
          case SAGGITARIUS:
          case MOONLIGHT_SENTINEL:
          case GHOST_SENTINEL:

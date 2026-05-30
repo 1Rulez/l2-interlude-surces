@@ -60,6 +60,7 @@ public class DuelistAI extends AdvancedCombatAI implements IConsumableSpender {
       List<SupportSpell> _selfSupportSpells = new ArrayList<>();
       _selfSupportSpells.add(new SupportSpell(78, 1));
       _selfSupportSpells.add(new SupportSpell(297, 2));
+      _selfSupportSpells.add(new SupportSpell(442, SpellUsageCondition.LESSHPPERCENT, 30, 3));
       _selfSupportSpells.add(new SupportSpell(121, SpellUsageCondition.LESSHPPERCENT, 25, 1));
       _selfSupportSpells.add(new SupportSpell(2037, SpellUsageCondition.LESSHPPERCENT, 85, 1));
       _selfSupportSpells.add(new SupportSpell(440, SpellUsageCondition.MISSINGCP, 1000, 3));

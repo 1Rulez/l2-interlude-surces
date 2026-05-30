@@ -48,9 +48,9 @@ public class GrandKhavatariAI extends AdvancedCombatAI {
       List<OffensiveSpell> _offensiveSpells = new ArrayList<>();
       _offensiveSpells.add(new OffensiveSpell(284, 1));
       _offensiveSpells.add(new OffensiveSpell(281, 2));
-      _offensiveSpells.add(new OffensiveSpell(280, 3));
-      _offensiveSpells.add(new OffensiveSpell(54, 4));
-      _offensiveSpells.add(new OffensiveSpell(346, 5));
+      _offensiveSpells.add(new OffensiveSpell(346, 3));
+      _offensiveSpells.add(new OffensiveSpell(280, 4));
+      _offensiveSpells.add(new OffensiveSpell(54, 5));
       _offensiveSpells.add(new OffensiveSpell(81, 6));
       return _offensiveSpells;
    }
