@@ -55,6 +55,7 @@ import phantom.ai.classes.MoonlightSentinelAI;
 import phantom.ai.classes.MysticMuseAI;
 import phantom.ai.classes.PhoenixKnightAI;
 import phantom.ai.classes.HellKnightAI;
+import phantom.ai.classes.EvasTemplarAI;
 import phantom.ai.classes.SaggitariusAI;
 import phantom.ai.classes.SoultakerAI;
 import phantom.ai.classes.StormScreamerAI;
@@ -1068,6 +1069,8 @@ public class FakeHelpers {
              break;
          case SPECTRAL_DANCER:
          case EVAS_TEMPLAR:
+             hennaList = FakePlayerConfig.TANKER_HENNA_LIST;
+             break;
          case SHILLIEN_TEMPLAR:
          case TITAN:
          case MAESTRO:
@@ -1114,6 +1117,7 @@ public class FakeHelpers {
       classes.add(ClassId.ADVENTURER);
       classes.add(ClassId.PHOENIX_KNIGHT);
       classes.add(ClassId.HELL_KNIGHT);
+      classes.add(ClassId.EVAS_TEMPLAR);
        return classes;
    }
 
@@ -1136,6 +1140,7 @@ public class FakeHelpers {
       classes.add(ClassId.DREADNOUGHT);
       classes.add(ClassId.PHOENIX_KNIGHT);
       classes.add(ClassId.HELL_KNIGHT);
+      classes.add(ClassId.EVAS_TEMPLAR);
        return classes;
    }
 
@@ -1177,6 +1182,7 @@ public class FakeHelpers {
        List<ClassId> classes = new ArrayList<>();
        classes.add(ClassId.PHOENIX_KNIGHT);
        classes.add(ClassId.HELL_KNIGHT);
+       classes.add(ClassId.EVAS_TEMPLAR);
        return classes;
     }
 
@@ -1283,6 +1289,7 @@ public class FakeHelpers {
       ais.put(ClassId.DREADNOUGHT, DreadnoughtAI.class);
       ais.put(ClassId.PHOENIX_KNIGHT, PhoenixKnightAI.class);
       ais.put(ClassId.HELL_KNIGHT, HellKnightAI.class);
+      ais.put(ClassId.EVAS_TEMPLAR, EvasTemplarAI.class);
        return ais;
    }
 

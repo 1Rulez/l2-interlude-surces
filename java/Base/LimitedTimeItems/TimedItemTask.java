@@ -124,9 +124,9 @@ public class TimedItemTask implements Runnable
                             long mins = (remaining / 60000) % 60;
                             long secs = (remaining / 1000) % 60;
 
-                            _log.info("TimedItemTask: Player=" + player.getName() +
-                                      " | Item=" + item.getItemName() +
-                                      " | Remaining=" + String.format("%02d:%02d:%02d", hrs, mins, secs));
+//                            _log.info("TimedItemTask: Player=" + player.getName() +
+//                                      " | Item=" + item.getItemName() +
+//                                      " | Remaining=" + String.format("%02d:%02d:%02d", hrs, mins, secs));
                         }
                     }
                 }
