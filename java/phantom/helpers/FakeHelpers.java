@@ -3116,8 +3116,9 @@ public class FakeHelpers {
          case MOONLIGHT_SENTINEL:
          case GHOST_HUNTER:
          case GHOST_SENTINEL:
+             return ArmorType.LIGHT;
          case GRAND_KHAVATARI:
-            return ArmorType.LIGHT;
+            return ArmorType.HEAVY;
          default:
             return ArmorType.HEAVY;
       }
