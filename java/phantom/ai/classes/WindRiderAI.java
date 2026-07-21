@@ -61,7 +61,7 @@ public class WindRiderAI extends AdvancedCombatAI {
       _selfSupportSpells.add(new SupportSpell(446, SpellUsageCondition.LESSHPPERCENT, 75, 1));
       _selfSupportSpells.add(new SupportSpell(2037, SpellUsageCondition.LESSHPPERCENT, 85, 1));
       _selfSupportSpells.add(new SupportSpell(123, 3));
-      _selfSupportSpells.add(new OffensiveSpell(410, 4));
+      _selfSupportSpells.add(new SupportSpell(410, 4));
       _selfSupportSpells.add(new SupportSpell(2166, SpellUsageCondition.MISSINGCP, 500, 1));
       _selfSupportSpells.add(new SupportSpell(2005, SpellUsageCondition.MISSINGMP, 2000, 1));
       return _selfSupportSpells;
