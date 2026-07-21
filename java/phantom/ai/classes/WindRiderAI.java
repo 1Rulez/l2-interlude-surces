@@ -43,10 +43,9 @@ public class WindRiderAI extends AdvancedCombatAI {
       List<OffensiveSpell> _offensiveSpells = new ArrayList<>();
       _offensiveSpells.add(new OffensiveSpell(263, 1));
       _offensiveSpells.add(new OffensiveSpell(12, 2));
-      _offensiveSpells.add(new OffensiveSpell(410, 3));
-      _offensiveSpells.add(new OffensiveSpell(321, 4));
-      _offensiveSpells.add(new OffensiveSpell(344, 5));
-      _offensiveSpells.add(new OffensiveSpell(358, 6));
+      _offensiveSpells.add(new OffensiveSpell(321, 3));
+      _offensiveSpells.add(new OffensiveSpell(344, 4));
+      _offensiveSpells.add(new OffensiveSpell(358, 5));
       return _offensiveSpells;
    }
 
@@ -62,6 +61,7 @@ public class WindRiderAI extends AdvancedCombatAI {
       _selfSupportSpells.add(new SupportSpell(446, SpellUsageCondition.LESSHPPERCENT, 75, 1));
       _selfSupportSpells.add(new SupportSpell(2037, SpellUsageCondition.LESSHPPERCENT, 85, 1));
       _selfSupportSpells.add(new SupportSpell(123, 3));
+      _selfSupportSpells.add(new OffensiveSpell(410, 4));
       _selfSupportSpells.add(new SupportSpell(2166, SpellUsageCondition.MISSINGCP, 500, 1));
       _selfSupportSpells.add(new SupportSpell(2005, SpellUsageCondition.MISSINGMP, 2000, 1));
       return _selfSupportSpells;
