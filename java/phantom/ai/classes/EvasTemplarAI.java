@@ -48,7 +48,7 @@ public class EvasTemplarAI extends AdvancedCombatAI {
         List<OffensiveSpell> _offensiveSpells = new ArrayList<>();
         _offensiveSpells.add(new OffensiveSpell(400, 1));
         _offensiveSpells.add(new OffensiveSpell(352, 2));
-        _offensiveSpells.add(new OffensiveSpell(402, 4));
+        _offensiveSpells.add(new OffensiveSpell(402, 3));
 
         return _offensiveSpells;
     }
