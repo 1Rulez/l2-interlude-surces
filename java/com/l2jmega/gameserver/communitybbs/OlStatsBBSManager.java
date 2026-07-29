@@ -68,23 +68,10 @@ private static void showClassList(Player activeChar, int classId)
     Connection con = null;
     try
     {
-        // Сброс счетчика позиций, если он используется для нумерации списка
         _posId = 0; 
         con = L2DatabaseFactory.getInstance().getConnection();
-        PreparedStatement statement = con.prepareStatement(
-            "SELECT 
-				h.char_id,
-				h.olympiad_points, 
-				h.competitions_done, 
-				ch.char_name, 
-				ch.online, 
-				cl.clan_name, 
-				cl.ally_name  
-			FROM olympiad_nobles h 
-			LEFT JOIN characters ch ON ch.obj_Id=h.char_id  
-			LEFT OUTER JOIN clan_data cl ON cl.clan_id=ch.clanid where h.class_id=? 
-			ORDER BY h.olympiad_points DESC, h.competitions_done DESC"
-        );
+	    PreparedStatement statement = con.prepareStatement("SELECT h.char_id, h.olympiad_points, h.competitions_done, ch.char_name, ch.online, cl.clan_name, cl.ally_name FROM olympiad_nobles h LEFT JOIN characters ch ON ch.obj_Id=h.char_id LEFT OUTER JOIN clan_data cl ON cl.clan_id=ch.clanid where h.class_id=? ORDER BY h.olympiad_points DESC, h.competitions_done DESC");
+
         statement.setInt(1, classId);
         ResultSet result = statement.executeQuery();
         int recordCount = 0; 
