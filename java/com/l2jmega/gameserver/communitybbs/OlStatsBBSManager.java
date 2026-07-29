@@ -62,7 +62,7 @@ public class OlStatsBBSManager extends BaseBBSManager
 	
 private static void showClassList(Player activeChar, int classId)
 {
-    final int MAX_RECORDS = 70;
+    final int MAX_RECORDS = 20;
     String content = HtmCache.getInstance().getHtm("data/html/CommunityBoard/stats/olympiad/list.htm");
     StringBuilder tb = new StringBuilder();
     Connection con = null;
