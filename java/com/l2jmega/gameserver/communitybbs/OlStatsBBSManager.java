@@ -60,58 +60,79 @@ public class OlStatsBBSManager extends BaseBBSManager
 	    separateAndSend(content, activeChar);
 	}
 	
-	private static void showClassList(Player activeChar, int classId)
-	{
-		String content = HtmCache.getInstance().getHtm("data/html/CommunityBoard/stats/olympiad/list.htm");
-	    StringBuilder tb = new StringBuilder();
-	    Connection con = null;
-	    try
-	    {
-	    	_posId = 0;
-	        con = L2DatabaseFactory.getInstance().getConnection();
-	        PreparedStatement statement = con.prepareStatement("SELECT h.char_id, h.olympiad_points, h.competitions_done, ch.char_name, ch.online, cl.clan_name, cl.ally_name FROM olympiad_nobles h LEFT JOIN characters ch ON ch.obj_Id=h.char_id LEFT OUTER JOIN clan_data cl ON cl.clan_id=ch.clanid where h.class_id=? ORDER BY h.olympiad_points DESC, h.competitions_done DESC");
-	        
-	        statement.setInt(1, classId);
-	        ResultSet result = statement.executeQuery();
-	        while (result.next())	
-	        {
-	        	boolean status = false;
-	            _posId += 1;
-	            if (result.getInt("online") == 1) 
-	            {
+private static void showClassList(Player activeChar, int classId)
+{
+    final int MAX_RECORDS = 70;
+    String content = HtmCache.getInstance().getHtm("data/html/CommunityBoard/stats/olympiad/list.htm");
+    StringBuilder tb = new StringBuilder();
+    Connection con = null;
+    try
+    {
+        // Сброс счетчика позиций, если он используется для нумерации списка
+        _posId = 0; 
+        con = L2DatabaseFactory.getInstance().getConnection();
+        PreparedStatement statement = con.prepareStatement(
+            "SELECT 
+				h.char_id,
+				h.olympiad_points, 
+				h.competitions_done, 
+				ch.char_name, 
+				ch.online, 
+				cl.clan_name, 
+				cl.ally_name  
+			FROM olympiad_nobles h 
+			LEFT JOIN characters ch ON ch.obj_Id=h.char_id  
+			LEFT OUTER JOIN clan_data cl ON cl.clan_id=ch.clanid where h.class_id=? 
+			ORDER BY h.olympiad_points DESC, h.competitions_done DESC"
+        );
+        statement.setInt(1, classId);
+        ResultSet result = statement.executeQuery();
+        int recordCount = 0; 
+
+        while (result.next())
+        {
+            if (recordCount >= MAX_RECORDS) {
+                break;
+            }
+
+            boolean status = false;
+            _posId += 1;
+            if (result.getInt("online") == 1) 
+            {
 	            	status = true;	
-	            }
-	            tb.append("<table border=0 cellspacing=0 cellpadding=2 width=610>");
-	            tb.append("<tr>");
-	            tb.append("<td FIXWIDTH=10></td>");
-	            tb.append("<td FIXWIDTH=40>" + _posId + ".</td>");
-	            tb.append("<td FIXWIDTH=190>" + result.getString("char_name") + "</td>");
-	            tb.append("<td FIXWIDTH=140>" + className(classId) + "</td>");
-	            tb.append("<td FIXWIDTH=100>" + result.getInt("olympiad_points") + "</td>");
-	            tb.append("<td FIXWIDTH=120>" + result.getInt("competitions_done") + "</td>");
-	            tb.append("<td FIXWIDTH=120>" + result.getString("clan_name") + "</td>");
-	            tb.append("<td FIXWIDTH=120>" + result.getString("ally_name") + "</td>");
-	            tb.append("<td FIXWIDTH=70>" + (status ? "<font color=99FF00>Online</font>" : "<font color=CC0000>Offline</font>") + "</td>");
-	            tb.append("<td FIXWIDTH=5></td>");
-	            tb.append("</tr>");
-	            tb.append("</table>");
-	            tb.append("<img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");	            
-	        }
-	        result.close();
-	        statement.close();
-	    }
-	    catch (Exception e)
-	    {
-	    	_log.log(Level.WARNING, "Failed to load " + className(classId) + " list " + e.getMessage(), e);
-	    }
-	    finally
-	    {
-	    	L2DatabaseFactory.close(con);
-	    }
-	    content = content.replaceAll("%showList%", tb.toString());
-	    content = content.replaceAll("%className%", className(classId));
-	    separateAndSend(content, activeChar);	    
-	}
+            }
+            tb.append("<table border=0 cellspacing=0 cellpadding=2 width=610>");
+            tb.append("<tr>");
+            tb.append("<td FIXWIDTH=10></td>");
+            tb.append("<td FIXWIDTH=40>" + _posId + ".</td>");
+            tb.append("<td FIXWIDTH=190>" + result.getString("char_name") + "</td>");
+            tb.append("<td FIXWIDTH=140>" + className(classId) + "</td>");
+            tb.append("<td FIXWIDTH=100>" + result.getInt("olympiad_points") + "</td>");
+            tb.append("<td FIXWIDTH=120>" + result.getInt("competitions_done") + "</td>");
+            tb.append("<td FIXWIDTH=120>" + result.getString("clan_name") + "</td>");
+            tb.append("<td FIXWIDTH=120>" + result.getString("ally_name") + "</td>");
+            tb.append("<td FIXWIDTH=70>" + (status ? "<font color=99FF00>Online</font>" : "<font color=CC0000>Offline</font>") + "</td>");
+            tb.append("<td FIXWIDTH=5></td>");
+            tb.append("</tr>");
+            tb.append("</table>");
+            tb.append("<img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");
+            recordCount++;
+        }
+        result.close();
+        statement.close();
+    }
+    catch (Exception e)
+    {
+        _log.log(Level.WARNING, "Failed to load " + className(classId) + " list " + e.getMessage(), e);
+    }
+    finally
+    {
+        L2DatabaseFactory.close(con);
+    }
+    content = content.replaceAll("%showList%", tb.toString());
+    content = content.replaceAll("%className%", className(classId));
+    separateAndSend(content, activeChar);
+}
 	
 	public static final String className(int classid)
 	{
