@@ -86,6 +86,7 @@ public enum FakePlayerManager {
    }
 
    public static void initialise() {
+      FakeHeroLoader.load();
       FakePlayerNameManager.INSTANCE.initialise();
       FakePlayerTaskManager.INSTANCE.initialise();
       CheckFakeManager.getInstance();

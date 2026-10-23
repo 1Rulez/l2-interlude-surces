@@ -89,6 +89,15 @@ public class FakePlayer extends Player {
       this._fakeAi = _fakeAi;
    }
 
+   /**
+    * A fake is a hero if either the in-memory flag is set or its object id was
+    * loaded from the hero tables by {@link FakeHeroLoader}.
+    */
+   @Override
+   public boolean isHero() {
+      return super.isHero() || FakeHeroLoader.isHero(getObjectId());
+   }
+
    @Override
    public void reviveRequest(Player Reviver, L2Skill skill, boolean Pet) {
       super.reviveRequest(Reviver, skill, Pet);
