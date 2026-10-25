@@ -44,6 +44,7 @@ import phantom.ai.party.PartyFollowerAI;
 import phantom.ai.party.PartyMode;
 import phantom.helpers.FakeHelpers;
 import phantom.model.FakeEmotion;
+import phantom.model.FakePersonality;
 
 public class FakePlayer extends Player {
    private FakePlayerAI _fakeAi;
@@ -58,6 +59,7 @@ public class FakePlayer extends Player {
    private boolean _olympiadParticipant;
    private PartyMode _partyMode = PartyMode.FOLLOW;
    protected String _mood = "";
+   private FakePersonality _personality;
 
    @Override
    public boolean isUnderControl() {
@@ -87,6 +89,20 @@ public class FakePlayer extends Player {
 
    public void setFakeAi(FakePlayerAI _fakeAi) {
       this._fakeAi = _fakeAi;
+   }
+
+   public FakePersonality getPersonality()
+   {
+      if (_personality == null)
+      {
+         _personality = FakePersonality.roll();
+      }
+      return _personality;
+   }
+
+   public void setPersonality(FakePersonality personality)
+   {
+      _personality = personality;
    }
 
    /**

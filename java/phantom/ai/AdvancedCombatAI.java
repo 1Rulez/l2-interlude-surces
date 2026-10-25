@@ -106,6 +106,7 @@ public abstract class AdvancedCombatAI extends CombatAI {
    protected long _nextActionTime;
    protected long _nextOlympiadPrepActionTime;
    protected long _lastOlympiadTargetUpdate;
+   protected long _lastTargetSwitchAt;
    protected long _olympiadFightStartedAt;
    protected long _nextOlympiadStrafeTime;
    protected long _nextCtfObjectiveDecisionTime;
@@ -1740,7 +1741,18 @@ public abstract class AdvancedCombatAI extends CombatAI {
       }
       
       // Поиск новой цели
-      return findNewTarget();
+      final Creature newTarget = findNewTarget();
+      if (newTarget != null && newTarget != currentTarget)
+      {
+         // Человеческая инерция: не переключаемся чаще, чем позволяет характер
+         final int switchDelay = _fakePlayer.getPersonality().getTargetSwitchDelayMs();
+         if (System.currentTimeMillis() - _lastTargetSwitchAt < switchDelay)
+         {
+            return currentTarget;
+         }
+         _lastTargetSwitchAt = System.currentTimeMillis();
+      }
+      return newTarget;
    }
    
    /**
@@ -1768,7 +1780,32 @@ public abstract class AdvancedCombatAI extends CombatAI {
          return null;
       }
       
-      return potentialTargets.get(0);
+      // Игрок не бьёт "первого в списке": выбор взвешен по расстоянию, HP цели
+      // и агрессивности характера, плюс случайный шум.
+      final double aggression = _fakePlayer.getPersonality().getAggression();
+      Creature best = null;
+      double bestScore = -Double.MAX_VALUE;
+      for (Creature c : potentialTargets)
+      {
+         double score = 0;
+         // Ближние цели приоритетнее, но не абсолютно
+         score -= Math.sqrt(_fakePlayer.getDistanceSq(c)) / 100.0;
+         // Добивание раненых
+         score += (1.0 - (c.getCurrentHp() / Math.max(1.0, c.getMaxHp()))) * 25.0 * aggression;
+         // Агрессор лезет к самым опасным, осторожный — к самым слабым
+         if (c instanceof Player)
+         {
+            score += aggression > 1.2 ? 8.0 : -4.0;
+         }
+         // Шум, чтобы не выбирали одинаково
+         score += Rnd.get(-15, 15);
+         if (score > bestScore)
+         {
+            bestScore = score;
+            best = c;
+         }
+      }
+      return best != null ? best : potentialTargets.get(0);
    }
    
    /**
@@ -3386,9 +3423,10 @@ public abstract class AdvancedCombatAI extends CombatAI {
    }
 
    protected boolean shouldRetreat(Creature target, FakeEmotion emotion) {
-      // Проверка по HP
+      // Проверка по HP (порог зависит от характера бота)
+      final double retreatThreshold = 20.0 * _fakePlayer.getPersonality().getRetreatHpMult();
       double hpPercent = _fakePlayer.getCurrentHp() / _fakePlayer.getMaxHp() * 100;
-      if (hpPercent < 20) {
+      if (hpPercent < retreatThreshold) {
          return true;
       }
 
@@ -3435,7 +3473,8 @@ public abstract class AdvancedCombatAI extends CombatAI {
          return false; // Не больше 3 ошибок подряд
       }
       
-      return Rnd.get(100) < FakePlayerConfig.FAKE_HUMAN_ERROR_RATE;
+      final double rate = FakePlayerConfig.FAKE_HUMAN_ERROR_RATE * _fakePlayer.getPersonality().getErrorRateMult();
+      return Rnd.get(100) < Math.min(90.0, rate);
    }
    
    /**
@@ -3485,10 +3524,11 @@ public abstract class AdvancedCombatAI extends CombatAI {
     */
    protected void applyHumanReactionDelay() {
       if (FakePlayerConfig.FAKE_HUMAN_REACTION_DELAY_ENABLED) {
-         int delay = Rnd.get(
+         final double mult = _fakePlayer.getPersonality().getReactionDelayMult();
+         final int delay = (int) Math.round(Rnd.get(
             FakePlayerConfig.FAKE_HUMAN_REACTION_DELAY_MIN,
             FakePlayerConfig.FAKE_HUMAN_REACTION_DELAY_MAX
-         );
+         ) * mult);
          _nextActionTime = System.currentTimeMillis() + delay;
       }
    }
