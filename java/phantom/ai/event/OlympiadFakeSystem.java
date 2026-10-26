@@ -115,7 +115,19 @@ public class OlympiadFakeSystem {
       {580, 260},
       {580, -260}
    };
-   
+
+   // Alternative approach locations spread across different cities for autonomous olympiad fakes.
+   private static final List<Location> OLYMPIAD_FAKE_SPREAD_LOCATIONS = new ArrayList<>();
+
+   static {
+      // Candidate approach locations in different cities (fallback spread for olympiad fakes).
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82072, 147624, -3464)); // Giran
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(147456, 27352, -2200));    // Aden
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82680, 53144, -1488)); // Oren
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(16408, 144216, -2976)); // Dion
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(87544, -143384, -1288)); // Schuttgart
+   }
+
    public static class OlyStats {
       public int wins;
       public int losses;
@@ -1189,7 +1201,7 @@ public class OlympiadFakeSystem {
       fake.setIsRunning(true);
 
       if (!fake.isInsideRadius(manager, 2000, false, false)) {
-         final Location spawnPoint = getSafeManagerPoint(manager, 180, 320);
+         final Location spawnPoint = OLYMPIAD_FAKE_SPREAD_LOCATIONS.isEmpty() ? getSafeManagerPoint(manager, 180, 320) : OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(Rnd.get(0, OLYMPIAD_FAKE_SPREAD_LOCATIONS.size() - 1));
          fake.teleToLocation(spawnPoint, 0);
          _nextManagerActionTime.put(objectId, now + Rnd.get(1500, 4000));
          return false;
@@ -1357,14 +1369,20 @@ public class OlympiadFakeSystem {
    private static Location getSafeManagerPoint(OlympiadManagerNpc manager, int minRadius, int maxRadius) {
       final int baseZ = GeoEngine.getInstance().getHeight(manager.getX(), manager.getY(), manager.getZ());
 
+      final List<Location> approachPoints = new ArrayList<>();
       for (int[] point : MANAGER_APPROACH_POINTS) {
          final int x = manager.getX() + point[0];
          final int y = manager.getY() + point[1];
          final int z = GeoEngine.getInstance().getHeight(x, y, baseZ);
          final Location destiny = GeoEngine.getInstance().canMoveToTargetLoc(manager.getX(), manager.getY(), baseZ, x, y, z);
          if (destiny != null) {
-            return destiny;
+            approachPoints.add(destiny);
          }
+      }
+
+      if (!approachPoints.isEmpty()) {
+         // Randomize per fake so olympiad fakes do not all stack into a single point.
+         return approachPoints.get(Rnd.get(0, approachPoints.size() - 1));
       }
 
       for (int attempt = 0; attempt < 12; attempt++) {
