@@ -361,7 +361,7 @@ public class OlympiadFakeSystem {
          return;
       }
 
-      final OlympiadManagerNpc manager = OlympiadManagerNpc.getGiranManager();
+      final OlympiadManagerNpc manager = OlympiadManagerNpc.getClosestManager(fake);
       final long now = System.currentTimeMillis();
       if (manager != null && fake.isInsideRadius(manager, 320, false, false)) {
          _nextRegistrationAttemptTime.put(fake.getObjectId(), now + Rnd.get(2000, 7000));
@@ -1142,8 +1142,8 @@ public class OlympiadFakeSystem {
    }
 
    private boolean approachOlympiadManager(FakePlayer fake) {
-      final OlympiadManagerNpc manager = OlympiadManagerNpc.getGiranManager();
-      if (manager == null) {
+      final OlympiadManagerNpc currentManager = OlympiadManagerNpc.getClosestManager(fake);
+      if (currentManager == null) {
          return true;
       }
 
@@ -1156,7 +1156,7 @@ public class OlympiadFakeSystem {
 
       clearOlympiadApproachCombatState(fake);
 
-      if (fake.isInsideRadius(manager, 220, false, false)) {
+      if (fake.isInsideRadius(currentManager, 220, false, false)) {
          maybeShoutForOlympiad(fake, now);
          Long nextActionAtBoxed = _nextManagerActionTime.get(objectId);
          if (nextActionAtBoxed == null) {
@@ -1173,17 +1173,17 @@ public class OlympiadFakeSystem {
          if (shuffles == 0 && Rnd.get(100) < 28) {
             _managerShuffleCounts.put(objectId, 1);
             _nextManagerActionTime.put(objectId, now + Rnd.get(1500, 4000));
-            final int sidestepX = manager.getX() + Rnd.get(-140, 140);
-            final int sidestepY = manager.getY() + Rnd.get(-140, 140);
-            fake.getFakeAi().moveTo(sidestepX, sidestepY, manager.getZ());
+            final int sidestepX = currentManager.getX() + Rnd.get(-140, 140);
+            final int sidestepY = currentManager.getY() + Rnd.get(-140, 140);
+            fake.getFakeAi().moveTo(sidestepX, sidestepY, currentManager.getZ());
             return false;
          }
 
          if (Rnd.get(100) < 8) {
             _nextManagerActionTime.put(objectId, now + Rnd.get(18000, 42000));
-            final int resetX = manager.getX() + Rnd.get(-260, 260);
-            final int resetY = manager.getY() + Rnd.get(-260, 260);
-            fake.getFakeAi().moveTo(resetX, resetY, manager.getZ());
+            final int resetX = currentManager.getX() + Rnd.get(-260, 260);
+            final int resetY = currentManager.getY() + Rnd.get(-260, 260);
+            fake.getFakeAi().moveTo(resetX, resetY, currentManager.getZ());
             return false;
          }
 
@@ -1203,20 +1203,28 @@ public class OlympiadFakeSystem {
 
       final Location approachPoint = _managerApproachLocations.computeIfAbsent(objectId, id -> {
          if (OLYMPIAD_FAKE_SPREAD_LOCATIONS.isEmpty()) {
-            return getSafeManagerPoint(manager, 180, 320);
+            return getSafeManagerPoint(currentManager, 180, 320);
          }
          final Location basePoint = OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(Rnd.get(0, OLYMPIAD_FAKE_SPREAD_LOCATIONS.size() - 1));
-         final int x = basePoint.getX() + Rnd.get(-100, 100);
-         final int y = basePoint.getY() + Rnd.get(-100, 100);
-         final int z = GeoEngine.getInstance().getHeight(x, y, basePoint.getZ());
+         final OlympiadManagerNpc spawnManager = getClosestOlympiadManager(basePoint);
+         if (spawnManager == null) {
+            return getSafeManagerPoint(currentManager, 180, 320);
+         }
+         final int x = spawnManager.getX() + Rnd.get(-100, 100);
+         final int y = spawnManager.getY() + Rnd.get(-100, 100);
+         final int z = GeoEngine.getInstance().getHeight(x, y, spawnManager.getZ());
          return new Location(x, y, z);
       });
-      if (!fake.isInsideRadius(manager, 2000, false, false)) {
-         if (fake.getX() != approachPoint.getX() || fake.getY() != approachPoint.getY() || fake.getZ() != approachPoint.getZ()) {
-            fake.teleToLocation(approachPoint, 0);
-         }
+      final long dx = fake.getX() - approachPoint.getX();
+      final long dy = fake.getY() - approachPoint.getY();
+      if ((dx * dx) + (dy * dy) > 300L * 300L) {
+         fake.teleToLocation(approachPoint, 0);
          _nextManagerActionTime.put(objectId, now + Rnd.get(1500, 4000));
          return false;
+      }
+
+      if (currentManager == null) {
+         return true;
       }
 
       fake.getFakeAi().moveTo(approachPoint.getX(), approachPoint.getY(), approachPoint.getZ());
@@ -1291,7 +1299,7 @@ public class OlympiadFakeSystem {
 
    private static long getAutonomousCandidateScore(FakePlayer fake) {
       long score = Rnd.get(0, 40);
-      final OlympiadManagerNpc manager = OlympiadManagerNpc.getGiranManager();
+      final OlympiadManagerNpc manager = OlympiadManagerNpc.getClosestManager(fake);
       if (manager != null) {
          final long distanceSq = (long) fake.getDistanceSq(manager);
          if (fake.isInsideRadius(manager, 320, false, false)) {
@@ -1408,6 +1416,26 @@ public class OlympiadFakeSystem {
       }
 
       return new Location(manager.getX() + 180, manager.getY(), baseZ);
+   }
+
+   private static OlympiadManagerNpc getClosestOlympiadManager(Location location) {
+      OlympiadManagerNpc closest = null;
+      long bestDistance = Long.MAX_VALUE;
+      for (OlympiadManagerNpc manager : OlympiadManagerNpc.getInstances()) {
+         if (manager == null) {
+            continue;
+         }
+
+         final long dx = manager.getX() - location.getX();
+         final long dy = manager.getY() - location.getY();
+         final long dz = manager.getZ() - location.getZ();
+         final long distance = (dx * dx) + (dy * dy) + (dz * dz);
+         if (distance < bestDistance) {
+            bestDistance = distance;
+            closest = manager;
+         }
+      }
+      return closest;
    }
 
    private static void setWaitingForOlympiadMatch(FakePlayer fake, boolean waiting) {
