@@ -44,6 +44,7 @@ import phantom.helpers.FakeHelpers;
 
 public abstract class FakePlayerAI {
    private static final int TOURNAMENT_TARGET_RADIUS = 3000;
+   private static final long TARGET_CHANGE_PAUSE_MS = 1000L;
    public final FakePlayer _fakePlayer;
    protected volatile boolean _clientMoving;
    protected volatile boolean _clientAutoAttacking;
@@ -70,6 +71,7 @@ public abstract class FakePlayerAI {
    private int _activeObstacleBypassY = 0;
    private int _activeObstacleBypassZ = 0;
    private long _activeObstacleBypassUntilMs = 0L;
+   private volatile long _targetChangePauseUntilMs;
 
    public FakePlayerAI(FakePlayer character) {
       this._fakePlayer = character;
@@ -347,6 +349,22 @@ public abstract class FakePlayerAI {
       return this._isBusyThinking;
    }
 
+   public void onTargetChanged(WorldObject previousTarget) {
+      if (!(previousTarget instanceof Creature) || previousTarget == _fakePlayer) {
+         return;
+      }
+
+      _targetChangePauseUntilMs = Math.max(_targetChangePauseUntilMs, System.currentTimeMillis() + TARGET_CHANGE_PAUSE_MS);
+      _fakePlayer.abortAttack();
+      _fakePlayer.abortCast();
+      clientStopMoving(null);
+      _fakePlayer.getAI().setIntention(CtrlIntention.ACTIVE);
+   }
+
+   public boolean isTargetChangePaused() {
+      return System.currentTimeMillis() < _targetChangePauseUntilMs;
+   }
+
    protected void teleportToLocation(int x, int y, int z, int randomOffset) {
       if (this._fakePlayer.isInOlympiadMode() || this._fakePlayer.isOlympiadProtection() || this._fakePlayer.getOlympiadGameId() != -1) {
          return;
@@ -373,6 +391,15 @@ public abstract class FakePlayerAI {
 
    protected void tryTargetRandomCreatureByTypeInRadius(Class<? extends Creature> creatureClass, int radius) {
       if (this._fakePlayer.isInOlympiadMode()) {
+         return;
+      }
+
+      if (this._fakePlayer.getTarget() instanceof Creature && ((Creature) this._fakePlayer.getTarget()).isDead()) {
+         this._fakePlayer.setTarget(null);
+         return;
+      }
+
+      if (isTargetChangePaused()) {
          return;
       }
 
@@ -417,8 +444,6 @@ public abstract class FakePlayerAI {
             Creature target = targets.get(0);
             this._fakePlayer.setTarget(target);
          }
-      } else if (((Creature)this._fakePlayer.getTarget()).isDead()) {
-         this._fakePlayer.setTarget(null);
       }
    }
 
@@ -914,7 +939,7 @@ public abstract class FakePlayerAI {
    }
 
    protected void moveToPawn(WorldObject pawn, int offset) {
-      if (!this._fakePlayer.isMovementDisabled()) {
+      if (!isTargetChangePaused() && !this._fakePlayer.isMovementDisabled()) {
          if (offset < 10) {
             offset = 10;
          }
@@ -990,6 +1015,10 @@ public abstract class FakePlayerAI {
    }
 
    protected boolean maybeMoveToPawn(WorldObject target, int offset) {
+      if (target != null && isTargetChangePaused()) {
+         return true;
+      }
+
       if (target != null && offset >= 0) {
          offset += this._fakePlayer.getTemplate().getCollisionRadius();
          if (target instanceof Creature) {

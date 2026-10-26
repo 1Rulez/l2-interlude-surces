@@ -4,6 +4,7 @@ import com.l2jmega.gameserver.model.L2Effect;
 import com.l2jmega.gameserver.model.actor.ai.CtrlIntention;
 import com.l2jmega.gameserver.skills.Env;
 import com.l2jmega.gameserver.templates.skills.L2EffectType;
+import phantom.FakePlayer;
 
 /**
  * @author -Nemesiss-
@@ -24,7 +25,7 @@ public class EffectRemoveTarget extends L2Effect
 	@Override
 	public boolean onStart()
 	{
-		if (!getEffected().isPhantom())
+		if (!getEffected().isPhantom() || getEffected() instanceof FakePlayer)
 		{
 			getEffected().setTarget(null);
 			getEffected().abortAttack();

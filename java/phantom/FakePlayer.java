@@ -91,6 +91,17 @@ public class FakePlayer extends Player {
       this._fakeAi = _fakeAi;
    }
 
+   @Override
+   public void setTarget(WorldObject target) {
+      WorldObject previousTarget = getTarget();
+      super.setTarget(target);
+      WorldObject currentTarget = getTarget();
+
+      if (_fakeAi != null && previousTarget != currentTarget) {
+         _fakeAi.onTargetChanged(previousTarget);
+      }
+   }
+
    public FakePersonality getPersonality()
    {
       if (_personality == null)
@@ -164,6 +175,11 @@ public class FakePlayer extends Player {
    public boolean checkUseMagicConditions(L2Skill skill, boolean forceUse, boolean dontMove) {
       if (skill == null)
          return false;
+
+      if (skill.isOffensive() && _fakeAi != null && _fakeAi.isTargetChangePaused()) {
+         this.sendPacket(ActionFailed.STATIC_PACKET);
+         return false;
+      }
 
       if (this.isDead() || this.isOutOfControl()) {
          this.sendPacket(ActionFailed.STATIC_PACKET);
@@ -401,6 +417,10 @@ public class FakePlayer extends Player {
    }
 
    public void forceAutoAttack(Creature creature) {
+      if (_fakeAi != null && _fakeAi.isTargetChangePaused()) {
+         return;
+      }
+
       if (this.getTarget() != null) {
          if (this.isFriendlyArenaTarget(this.getTarget())) {
             return;

@@ -1718,6 +1718,10 @@ public abstract class AdvancedCombatAI extends CombatAI {
     * Выбрать или обновить цель
     */
    protected Creature selectOrUpdateTarget() {
+      if (isTargetChangePaused()) {
+         return null;
+      }
+
       if (_fakePlayer.isInOlympiadMode()) {
          Creature olympiadTarget = findOlympiadOpponent();
          if (olympiadTarget != null) {
@@ -1812,6 +1816,10 @@ public abstract class AdvancedCombatAI extends CombatAI {
     * Поиск цели для атаки
     */
    protected void searchForTarget() {
+      if (isTargetChangePaused()) {
+         return;
+      }
+
       Creature newTarget = findNewTarget();
       if (newTarget != null) {
          _fakePlayer.setTarget(newTarget);
