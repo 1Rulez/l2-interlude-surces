@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.l2jmega.Config;
 import com.l2jmega.commons.concurrent.ThreadPool;
 import com.l2jmega.commons.random.Rnd;
@@ -49,6 +50,7 @@ public class OlympiadFakeSystem {
    private Map<Integer, OlympiadFakeContext> _olympiadContexts;
    private Map<Integer, Long> _nextRegistrationAttemptTime;
    private Map<Integer, Long> _nextManagerActionTime;
+   private Map<Integer, Location> _managerApproachLocations;
    private Map<Integer, Long> _nextOlympiadShoutTime;
    private Map<Integer, Integer> _managerShuffleCounts;
    
@@ -116,16 +118,16 @@ public class OlympiadFakeSystem {
       {580, -260}
    };
 
-   // Alternative approach locations spread across different cities for autonomous olympiad fakes.
    private static final List<Location> OLYMPIAD_FAKE_SPREAD_LOCATIONS = new ArrayList<>();
+   private static final AtomicInteger OLYMPIAD_FAKE_SPAWN_SEQUENCE = new AtomicInteger();
 
    static {
-      // Candidate approach locations in different cities (fallback spread for olympiad fakes).
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82072, 147624, -3464)); // Giran
-      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(147456, 27352, -2200));    // Aden
+      OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(147456, 27352, -2200)); // Aden
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82680, 53144, -1488)); // Oren
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(16408, 144216, -2976)); // Dion
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(87544, -143384, -1288)); // Schuttgart
+      OLYMPIAD_FAKE_SPAWN_SEQUENCE.set(Rnd.get(OLYMPIAD_FAKE_SPREAD_LOCATIONS.size()));
    }
 
    public static class OlyStats {
@@ -171,6 +173,7 @@ public class OlympiadFakeSystem {
       _olympiadContexts = new ConcurrentHashMap<>();
       _nextRegistrationAttemptTime = new ConcurrentHashMap<>();
       _nextManagerActionTime = new ConcurrentHashMap<>();
+      _managerApproachLocations = new ConcurrentHashMap<>();
       _nextOlympiadShoutTime = new ConcurrentHashMap<>();
       _managerShuffleCounts = new ConcurrentHashMap<>();
       _registrationQueue = new ArrayList<>();
@@ -615,6 +618,7 @@ public class OlympiadFakeSystem {
       final Integer objectId = fake.getObjectId();
       _nextRegistrationAttemptTime.remove(objectId);
       _nextManagerActionTime.remove(objectId);
+      _managerApproachLocations.remove(objectId);
       _nextOlympiadShoutTime.remove(objectId);
       _managerShuffleCounts.remove(objectId);
 
@@ -1200,14 +1204,21 @@ public class OlympiadFakeSystem {
 
       fake.setIsRunning(true);
 
+      final Location approachPoint = _managerApproachLocations.computeIfAbsent(objectId, id -> {
+         if (OLYMPIAD_FAKE_SPREAD_LOCATIONS.isEmpty()) {
+            return getSafeManagerPoint(manager, 180, 320);
+         }
+         final int index = Math.floorMod(OLYMPIAD_FAKE_SPAWN_SEQUENCE.getAndIncrement(), OLYMPIAD_FAKE_SPREAD_LOCATIONS.size());
+         return OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(index);
+      });
       if (!fake.isInsideRadius(manager, 2000, false, false)) {
-         final Location spawnPoint = OLYMPIAD_FAKE_SPREAD_LOCATIONS.isEmpty() ? getSafeManagerPoint(manager, 180, 320) : OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(Rnd.get(0, OLYMPIAD_FAKE_SPREAD_LOCATIONS.size() - 1));
-         fake.teleToLocation(spawnPoint, 0);
+         if (fake.getX() != approachPoint.getX() || fake.getY() != approachPoint.getY() || fake.getZ() != approachPoint.getZ()) {
+            fake.teleToLocation(approachPoint, 0);
+         }
          _nextManagerActionTime.put(objectId, now + Rnd.get(1500, 4000));
          return false;
       }
 
-      final Location approachPoint = getSafeManagerPoint(manager, 70, 140);
       fake.getFakeAi().moveTo(approachPoint.getX(), approachPoint.getY(), approachPoint.getZ());
       _nextManagerActionTime.put(objectId, now + Rnd.get(1000, 2800));
       return false;
