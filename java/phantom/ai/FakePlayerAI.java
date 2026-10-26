@@ -44,7 +44,7 @@ import phantom.helpers.FakeHelpers;
 
 public abstract class FakePlayerAI {
    private static final int TOURNAMENT_TARGET_RADIUS = 3000;
-   private static final long TARGET_CHANGE_PAUSE_MS = 1000L;
+   private static final long TARGET_CHANGE_PAUSE_MS = 3000L;
    public final FakePlayer _fakePlayer;
    protected volatile boolean _clientMoving;
    protected volatile boolean _clientAutoAttacking;
