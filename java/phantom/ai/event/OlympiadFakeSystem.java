@@ -5,7 +5,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import com.l2jmega.Config;
 import com.l2jmega.commons.concurrent.ThreadPool;
 import com.l2jmega.commons.random.Rnd;
@@ -119,7 +118,6 @@ public class OlympiadFakeSystem {
    };
 
    private static final List<Location> OLYMPIAD_FAKE_SPREAD_LOCATIONS = new ArrayList<>();
-   private static final AtomicInteger OLYMPIAD_FAKE_SPAWN_SEQUENCE = new AtomicInteger();
 
    static {
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82072, 147624, -3464)); // Giran
@@ -127,7 +125,6 @@ public class OlympiadFakeSystem {
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(82680, 53144, -1488)); // Oren
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(16408, 144216, -2976)); // Dion
       OLYMPIAD_FAKE_SPREAD_LOCATIONS.add(new Location(87544, -143384, -1288)); // Schuttgart
-      OLYMPIAD_FAKE_SPAWN_SEQUENCE.set(Rnd.get(OLYMPIAD_FAKE_SPREAD_LOCATIONS.size()));
    }
 
    public static class OlyStats {
@@ -1208,8 +1205,11 @@ public class OlympiadFakeSystem {
          if (OLYMPIAD_FAKE_SPREAD_LOCATIONS.isEmpty()) {
             return getSafeManagerPoint(manager, 180, 320);
          }
-         final int index = Math.floorMod(OLYMPIAD_FAKE_SPAWN_SEQUENCE.getAndIncrement(), OLYMPIAD_FAKE_SPREAD_LOCATIONS.size());
-         return OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(index);
+         final Location basePoint = OLYMPIAD_FAKE_SPREAD_LOCATIONS.get(Rnd.get(0, OLYMPIAD_FAKE_SPREAD_LOCATIONS.size() - 1));
+         final int x = basePoint.getX() + Rnd.get(-100, 100);
+         final int y = basePoint.getY() + Rnd.get(-100, 100);
+         final int z = GeoEngine.getInstance().getHeight(x, y, basePoint.getZ());
+         return new Location(x, y, z);
       });
       if (!fake.isInsideRadius(manager, 2000, false, false)) {
          if (fake.getX() != approachPoint.getX() || fake.getY() != approachPoint.getY() || fake.getZ() != approachPoint.getZ()) {
