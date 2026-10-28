@@ -1693,7 +1693,7 @@ public abstract class AdvancedCombatAI extends CombatAI {
    protected void updatePositioning(Creature target, FakeEmotion emotion) {
       long now = System.currentTimeMillis();
       
-      if (now - _lastPositionUpdate < 3000) {
+      if (now - _lastPositionUpdate < 4000) {
          return;
       }
       _lastPositionUpdate = now;
