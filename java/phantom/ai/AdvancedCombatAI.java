@@ -21,7 +21,10 @@ import com.l2jmega.gameserver.model.entity.Castle;
 import com.l2jmega.gameserver.model.entity.Siege;
 import com.l2jmega.gameserver.model.entity.Siege.SiegeSide;
 import com.l2jmega.gameserver.model.location.Location;
+import com.l2jmega.gameserver.model.olympiad.OlympiadGameManager;
+import com.l2jmega.gameserver.model.olympiad.OlympiadGameTask;
 import com.l2jmega.gameserver.model.zone.ZoneId;
+import com.l2jmega.gameserver.model.zone.type.L2OlympiadStadiumZone;
 import com.l2jmega.commons.concurrent.ThreadPool;
 import com.l2jmega.commons.random.Rnd;
 import com.l2jmega.events.CTF;
@@ -80,6 +83,7 @@ public abstract class AdvancedCombatAI extends CombatAI {
    private static final double OLY_HEALER_TARGET_MIN_MP_PERCENT = 14.0;
    private static final double OLY_HEALER_FINISH_WINDOW_HP_PERCENT = 32.0;
    private static final int OLY_HEALER_MIN_GAP = 220;
+   private static final long ARENA_RETURN_RETRY_MS = 800L;
    protected enum FakeRole {
       TANK,
       HEALER,
@@ -109,6 +113,7 @@ public abstract class AdvancedCombatAI extends CombatAI {
    protected long _lastTargetSwitchAt;
    protected long _olympiadFightStartedAt;
    protected long _nextOlympiadStrafeTime;
+   protected long _nextArenaReturnAttempt;
    protected long _nextCtfObjectiveDecisionTime;
    protected long _ctfObjectiveExpireTime;
    protected int _ctfObjectiveFlagIndex;
@@ -149,6 +154,7 @@ public abstract class AdvancedCombatAI extends CombatAI {
       _lastOlympiadTargetUpdate = 0;
       _olympiadFightStartedAt = 0;
       _nextOlympiadStrafeTime = 0;
+      _nextArenaReturnAttempt = 0L;
       _nextCtfObjectiveDecisionTime = 0;
       _ctfObjectiveExpireTime = 0;
       _ctfObjectiveFlagIndex = -1;
@@ -345,6 +351,12 @@ public abstract class AdvancedCombatAI extends CombatAI {
       
       // Если мертв - не действовать
       if (_fakePlayer.isDead()) {
+         return;
+      }
+
+      // Арена олимпиады: если фейк вышел за границу стадиона - возвращаем его пешком,
+      // не давая драться из-за пределов арены.
+      if (_fakePlayer.isInOlympiadMode() && _fakePlayer.isOlympiadStart() && handleOlympiadArenaReturn(now)) {
          return;
       }
 
@@ -2943,6 +2955,81 @@ public abstract class AdvancedCombatAI extends CombatAI {
       return total > 0;
    }
    
+   /**
+    * Арена текущего олимпийского матча.
+    * @return зона стадиона или {@code null}, если матч/зона недоступны
+    */
+   protected L2OlympiadStadiumZone getOlympiadArenaZone() {
+      final int gameId = _fakePlayer.getOlympiadGameId();
+      if (gameId < 0) {
+         return null;
+      }
+
+      final OlympiadGameTask task = OlympiadGameManager.getInstance().getOlympiadTask(gameId);
+      return task == null ? null : task.getZone();
+   }
+
+   /**
+    * "Поводок" арены: пока фейк вне стадиона, он идёт пешком обратно - к противнику,
+    * если тот виден и находится на арене, иначе к ближайшей точке спавна арены.
+    * @param now текущее время
+    * @return true, если бой на этом тике нужно пропустить (фейк возвращается)
+    */
+   protected boolean handleOlympiadArenaReturn(long now) {
+      final L2OlympiadStadiumZone arena = getOlympiadArenaZone();
+      if (arena == null || arena.isInsideZone(_fakePlayer.getX(), _fakePlayer.getY(), _fakePlayer.getZ())) {
+         _nextArenaReturnAttempt = 0L;
+         return false;
+      }
+
+      if (now < _nextArenaReturnAttempt) {
+         return true;
+      }
+
+      _nextArenaReturnAttempt = now + ARENA_RETURN_RETRY_MS;
+
+      final Location destination = getArenaReturnPoint(arena);
+      if (destination == null) {
+         return false;
+      }
+
+      _fakePlayer.abortCast();
+      _fakePlayer.abortAttack();
+      moveTo(destination.getX(), destination.getY(), destination.getZ());
+
+      if (FakePlayerConfig.FAKE_PLAYERS_DEBUG) {
+         _fakePlayer.say("[OLY] out of arena, walking back");
+      }
+      return true;
+   }
+
+   private Location getArenaReturnPoint(L2OlympiadStadiumZone arena) {
+      final Creature opponent = findOlympiadOpponent();
+      if (opponent != null && !opponent.isDead()
+         && arena.isInsideZone(opponent.getX(), opponent.getY(), opponent.getZ())
+         && Math.abs(opponent.getZ() - _fakePlayer.getZ()) <= 400) {
+         return new Location(opponent.getX(), opponent.getY(), opponent.getZ());
+      }
+
+      final List<Location> spawns = arena.getSpawns();
+      if (spawns == null || spawns.isEmpty()) {
+         return null;
+      }
+
+      Location nearest = null;
+      long nearestDistSq = Long.MAX_VALUE;
+      for (Location spawn : spawns) {
+         final long dx = (long) spawn.getX() - _fakePlayer.getX();
+         final long dy = (long) spawn.getY() - _fakePlayer.getY();
+         final long distSq = dx * dx + dy * dy;
+         if (distSq < nearestDistSq) {
+            nearestDistSq = distSq;
+            nearest = spawn;
+         }
+      }
+      return nearest;
+   }
+
    /**
     * Проверка на отступление
     */

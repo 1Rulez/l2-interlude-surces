@@ -137,7 +137,7 @@ public abstract class CombatAI extends FakePlayerAI {
          if (!hasTarget && !this._fakePlayer.isDead()) {
             if (this._idleStartTime == 0) {
                this._idleStartTime = System.currentTimeMillis();
-            } else if (!inActivePvpZone && !isActiveSiegeParticipant() && System.currentTimeMillis() - this._idleStartTime > 30000) {
+            } else if (!inActivePvpZone && !isActiveSiegeParticipant() && !this._fakePlayer.isInOlympiadMode() && System.currentTimeMillis() - this._idleStartTime > 30000) {
                this._fakePlayer.setFakePvp(false);
                this._fakePlayer.setFakeFarm(true);
                this._fakePlayer.assignDefaultAI();

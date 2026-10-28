@@ -59,6 +59,13 @@ public class AdvancedPositioning {
 
       double distance = Math.sqrt(fakePlayer.getDistanceSq(target));
 
+      // На арене олимпиады не кайтим и не отступаем: любые "отбегания" уводят
+      // фейка за границу стадиона. Разрешён только подход, если он далеко.
+      if (fakePlayer.isInOlympiadMode()) {
+         updateOlympiadPosition(fakePlayer, target, role, distance);
+         return;
+      }
+
       // BossEvent: keep movement minimal for realism.
       // Only archers (bow users) are allowed to kite/strafe; everyone else stands and hits.
       if (isInBossEvent(fakePlayer) && !isBowUser(fakePlayer)) {
@@ -91,6 +98,30 @@ public class AdvancedPositioning {
          case SUPPORT:
             handleSupportPositioning(fakePlayer, target, distance);
             break;
+      }
+   }
+
+   /**
+    * Позиционирование на арене олимпиады: без кайта и отступлений,
+    * только подход к цели, если дистанция слишком большая.
+    */
+   private void updateOlympiadPosition(FakePlayer fakePlayer, Creature target, CombatRole role, double distance) {
+      final int optimalDistance;
+      switch (role) {
+         case DPS_RANGE:
+            optimalDistance = OPTIMAL_RANGE_DISTANCE;
+            break;
+         case HEALER:
+         case SUPPORT:
+            optimalDistance = 400;
+            break;
+         default:
+            optimalDistance = OPTIMAL_MELEE_RANGE;
+            break;
+      }
+
+      if (distance > optimalDistance + 120) {
+         moveToOptimalRange(fakePlayer, target, optimalDistance);
       }
    }
 
